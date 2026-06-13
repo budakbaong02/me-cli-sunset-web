@@ -75,20 +75,25 @@
       <div class="space-y-2">
         {% for q in data.quotas[:6] %}
         <div class="rounded-[14px] p-2">
-          <div class="text-xs font-medium text-slate-200 mb-1">{{ q.name or '-' }}</div>
+          <div class="text-xs font-medium text-slate-200 theme-light:text-slate-700 mb-1">
+            {{ q.name or q.package_family.name or q.package_variants.display_name or q.package_variants.name or q.group_name or '-' }}
+          </div>
           {% for b in (q.benefits or [])[:3] %}
           {% set rem = b.remaining or 0 %}
           {% set tot = b.total or 0 %}
           {% set pct = ((rem / tot) * 100) if tot else 0 %}
-          <div class="flex items-center gap-2 mb-1">
+          <div class="mb-2 last:mb-0">
+            {% if b.name %}<div class="text-[0.65rem] text-slate-500 mb-0.5 truncate">{{ b.name }}</div>{% endif %}
+            <div class="flex items-center gap-2">
             <div class="flex-1">
               <div class="h-1.5 rounded-full bg-slate-700 overflow-hidden">
                 <div class="h-full rounded-full {% if pct > 50 %}bg-emerald-400{% elif pct > 20 %}bg-amber-400{% else %}bg-red-400{% endif %}" style="width:{{ [pct, 100]|min }}%"></div>
               </div>
             </div>
-            <div class="text-xs text-slate-400 w-20 text-right">
+            <div class="text-xs text-slate-400 w-20 text-right shrink-0">
               {% if b.data_type == 'DATA' %}{{ rem | bytes }}/{{ tot | bytes }}{% elif b.data_type == 'VOICE' %}{{ (rem/60)|int }}m{% else %}{{ rem }}{% endif %}
               <span class="text-slate-600">({{ "%.0f"|format(pct) }}%)</span>
+            </div>
             </div>
           </div>
           {% endfor %}

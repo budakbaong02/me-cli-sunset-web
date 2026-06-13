@@ -55,15 +55,18 @@
       <div class="space-y-2">
         {{#quotas}}
         <div class="rounded-[14px] p-2">
-          <div class="text-xs font-medium text-slate-200 mb-1">{{name}}</div>
+          <div class="text-xs font-medium text-slate-200 theme-light:text-slate-700 mb-1">{{quota_name}}</div>
           {{#benefits}}
-          <div class="flex items-center gap-2 mb-1">
-            <div class="flex-1">
-              <div class="h-1.5 rounded-full bg-slate-700 overflow-hidden">
-                <div class="h-full rounded-full {{bar_class}}" style="width:{{pct_width}}%"></div>
+          <div class="mb-2 last:mb-0">
+            {{#has_benefit_name}}<div class="text-[0.65rem] text-slate-500 mb-0.5 truncate">{{benefit_name}}</div>{{/has_benefit_name}}
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <div class="h-1.5 rounded-full bg-slate-700 overflow-hidden">
+                  <div class="h-full rounded-full {{bar_class}}" style="width:{{pct_width}}%"></div>
+                </div>
               </div>
+              <div class="text-xs text-slate-400 w-24 text-right shrink-0">{{display}}</div>
             </div>
-            <div class="text-xs text-slate-400 w-24 text-right">{{display}}</div>
           </div>
           {{/benefits}}
         </div>

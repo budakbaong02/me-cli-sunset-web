@@ -2,6 +2,8 @@ import { formatDate, formatRp, formatTs, humanizeBytes } from "../ssr/filters";
 import type { MonitoringRule, QuotaCache } from "./types";
 
 export interface CacheBenefitRow {
+  benefit_name: string;
+  has_benefit_name: boolean;
   pct: number;
   pct_width: number;
   bar_class: string;
@@ -9,8 +11,22 @@ export interface CacheBenefitRow {
 }
 
 export interface CacheQuotaRow {
-  name: string;
+  quota_name: string;
+  has_quota_name: boolean;
   benefits: CacheBenefitRow[];
+}
+
+function resolveQuotaName(q: Record<string, unknown>): string {
+  const direct = String(q.name ?? "").trim();
+  if (direct) return direct;
+  const family = (q.package_family as Record<string, unknown> | undefined)?.name;
+  if (family) return String(family);
+  const variant = (q.package_variants as Record<string, unknown> | undefined)?.display_name
+    ?? (q.package_variants as Record<string, unknown> | undefined)?.name;
+  if (variant) return String(variant);
+  const group = String(q.group_name ?? "").trim();
+  if (group) return group;
+  return "-";
 }
 
 export interface CacheCardRow {
@@ -67,14 +83,22 @@ export function formatCacheCards(cache: QuotaCache): CacheCardRow[] {
           if (dt === "DATA") display = `${humanizeBytes(rem)}/${humanizeBytes(tot)}`;
           else if (dt === "VOICE") display = `${Math.round(rem / 60)}m`;
           else display = String(rem);
+          const benefitName = String(b.name ?? "").trim();
           return {
+            benefit_name: benefitName,
+            has_benefit_name: benefitName.length > 0,
             pct,
             pct_width: Math.min(pct, 100),
             bar_class: barClass(pct),
             display: `${display} (${pct.toFixed(0)}%)`,
           };
         });
-      return { name: String(q.name ?? "-"), benefits };
+      const quotaName = resolveQuotaName(q);
+      return {
+        quota_name: quotaName,
+        has_quota_name: quotaName !== "-",
+        benefits,
+      };
     });
 
     return {
