@@ -45,12 +45,12 @@
   {{#benefits}}
     <div>
       <div class="flex items-center justify-between text-sm mb-1">
-        <div class="font-medium">{{name}}{{#is_unlimited}} <span class="text-xs text-emerald-300">∞</span>{{/is_unlimited}}</div>
+        <div class="font-medium">{{name}}{{#is_unlimited}} <span class="neu-badge text-xs">∞ Unlimited</span>{{/is_unlimited}}</div>
         {{^is_unlimited}}<div class="text-xs text-slate-400 font-mono">{{rem_disp}}{{#unit}} {{unit}}{{/unit}} / {{tot_disp}}{{#unit}} {{unit}}{{/unit}}</div>{{/is_unlimited}}
       </div>
       {{^is_unlimited}}
-      <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-        <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style="width: {{pct}}%"></div>
+      <div class="neu-progress">
+        <div class="neu-progress-bar" style="width: {{pct}}%"></div>
       </div>
       {{/is_unlimited}}
     </div>

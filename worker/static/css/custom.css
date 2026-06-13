@@ -87,6 +87,33 @@ body {
 .neu-card-sm:hover {
   box-shadow: 6px 6px 12px #060a12, -6px -6px 12px #182442;
 }
+.card {
+  background: #0f172a;
+  box-shadow: 6px 6px 12px #060a12, -6px -6px 12px #182442;
+  border-radius: 20px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  color: #e2e8f0;
+}
+.card pre {
+  background: #0f172a;
+  box-shadow: inset 3px 3px 6px #060a12, inset -3px -3px 6px #182442;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+.neu-progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #0f172a;
+  box-shadow: inset 2px 2px 4px #060a12, inset -2px -2px 4px #182442;
+}
+.neu-progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
 .neu-label {
   display: block;
   font-size: 0.65rem;
@@ -713,6 +740,17 @@ pre {
 }
 .theme-light .card-stat:active {
   box-shadow: inset 3px 3px 6px #d1d5db, inset -3px -3px 6px #ffffff !important;
+}
+.theme-light .card {
+  color: #334155 !important;
+}
+.theme-light .card pre {
+  background: #f1f5f9 !important;
+  box-shadow: inset 3px 3px 6px #d1d5db, inset -3px -3px 6px #ffffff !important;
+}
+.theme-light .neu-progress {
+  background: #f1f5f9 !important;
+  box-shadow: inset 2px 2px 4px #d1d5db, inset -2px -2px 4px #ffffff !important;
 }
 .theme-light .neu-badge {
   background: rgba(0, 0, 0, 0.08) !important;
