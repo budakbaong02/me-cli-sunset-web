@@ -228,6 +228,29 @@ input:checked + .theme-card {
 .card-action:hover {
   box-shadow: 6px 6px 12px #060a12, -6px -6px 12px #182442;
 }
+.card-action-sm {
+  gap: 0.35rem;
+  padding: 0.55rem 0.35rem;
+  min-height: 68px;
+  font-size: 0.68rem;
+  border-radius: 12px;
+  box-shadow: 3px 3px 6px #060a12, -3px -3px 6px #182442;
+}
+.card-action-sm:hover {
+  box-shadow: 4px 4px 8px #060a12, -4px -4px 8px #182442;
+}
+.card-action-icon {
+  line-height: 0;
+  opacity: 0.85;
+}
+.card-action-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.card-action-label {
+  line-height: 1.2;
+  font-weight: 600;
+}
 
 .btn {
   display: inline-block;
