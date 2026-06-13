@@ -1,10 +1,17 @@
-import os
 import json
 import time
 from app.client.ciam import get_new_token
 from app.client.engsel import get_profile
 from app.util import ensure_api_key
-from webui.context import resolve_path
+from webui.storage.backend import USER_ACTIVE_NUMBER, USER_REFRESH_TOKENS
+from webui.storage.tenant import (
+    delete_user_blob,
+    read_user_json,
+    read_user_text,
+    user_blob_exists,
+    write_user_json,
+    write_user_text,
+)
 
 class Auth:
     _instance_ = None
@@ -49,18 +56,16 @@ class Auth:
             self._initialized_ = True
 
     def reload_for_current_dir(self):
-        """Reset state and re-read tokens/active-user from current working dir.
-        Called by webui middleware after switching to a per-user dir."""
+        """Reset state and re-read tokens/active-user for the current storage tenant."""
         self.refresh_tokens = []
         self.active_user = None
-        if os.path.exists("refresh-tokens.json"):
+        if user_blob_exists(USER_REFRESH_TOKENS):
             try:
                 self.load_tokens()
             except Exception as e:
                 print(f"[auth.reload] load_tokens err: {e}")
         else:
-            with open(resolve_path("refresh-tokens.json"), "w", encoding="utf-8") as f:
-                json.dump([], f, indent=4)
+            write_user_json(USER_REFRESH_TOKENS, [])
         try:
             self.load_active_number()
         except Exception as e:
@@ -68,21 +73,20 @@ class Auth:
         self.last_refresh_time = int(time.time())
             
     def load_tokens(self):
-        with open(resolve_path("refresh-tokens.json"), "r", encoding="utf-8") as f:
-            refresh_tokens = json.load(f)
-            
-            if len(refresh_tokens) !=  0:
-                self.refresh_tokens = []
+        refresh_tokens = read_user_json(USER_REFRESH_TOKENS, default=[])
+        if not isinstance(refresh_tokens, list):
+            refresh_tokens = []
 
-            # Validate and load tokens
-            for rt in refresh_tokens:
-                if "number" in rt and "refresh_token" in rt:
-                    self.refresh_tokens.append(rt)
-                else:
-                    print(f"Invalid token entry: {rt}")
+        if len(refresh_tokens) != 0:
+            self.refresh_tokens = []
+
+        for rt in refresh_tokens:
+            if "number" in rt and "refresh_token" in rt:
+                self.refresh_tokens.append(rt)
+            else:
+                print(f"Invalid token entry: {rt}")
 
     def add_refresh_token(self, number: int, refresh_token: str):
-        # Check if number already exist, if yes, replace it, if not append
         existing = next((rt for rt in self.refresh_tokens if rt["number"] == number), None)
         if existing:
             existing["refresh_token"] = refresh_token
@@ -100,23 +104,15 @@ class Auth:
                 "refresh_token": refresh_token
             })
         
-        # Save to file
         self.write_tokens_to_file()
-
-        # Set active user to newly added
         self.set_active_user(number)
             
     def remove_refresh_token(self, number: int):
         self.refresh_tokens = [rt for rt in self.refresh_tokens if rt["number"] != number]
+        self.write_tokens_to_file()
         
-        # Save to file
-        with open(resolve_path("refresh-tokens.json"), "w", encoding="utf-8") as f:
-            json.dump(self.refresh_tokens, f, indent=4)
-        
-        # If the removed user was the active user, select a new active user if available
         if self.active_user and self.active_user["number"] == number:
             self.active_user = None
-            # Select the first user as active user by default
             if len(self.refresh_tokens) != 0:
                 first_rt = self.refresh_tokens[0]
                 try:
@@ -127,14 +123,13 @@ class Auth:
                     print(f"Failed to activate next after remove {number}: {e}")
             else:
                 print("No users left.")
-                if os.path.exists("active.number"):
+                if user_blob_exists(USER_ACTIVE_NUMBER):
                     try:
-                        os.remove("active.number")
+                        delete_user_blob(USER_ACTIVE_NUMBER)
                     except Exception:
                         pass
 
     def set_active_user(self, number: int):
-        # Get refresh token for the number from refresh_tokens
         rt_entry = next((rt for rt in self.refresh_tokens if rt["number"] == number), None)
         if not rt_entry:
             print(f"No refresh token found for number: {number}")
@@ -159,23 +154,17 @@ class Auth:
                 "tokens": tokens
             }
             
-            # Update refresh token entry with subscriber_id and subscription_type
             rt_entry["subscriber_id"] = subscriber_id
             rt_entry["subscription_type"] = subscription_type
-            
-            # Update refresh token. The real client app do this, not sure why cz refresh token should still be valid
             rt_entry["refresh_token"] = tokens["refresh_token"]
             self.write_tokens_to_file()
             
             self.last_refresh_time = int(time.time())
-            
-            # Save active number to file
             self.write_active_number()
             return True
         except Exception as e:
             err = str(e)
             print(f"Error activating number {number}: {err}")
-            # Auto-clean invalid/expired tokens so user isn't stuck
             if any(kw in err.lower() for kw in ["invalid or expired", "session not active", "subscriber id is missing", "refresh token"]):
                 print(f"Auto-removing invalid token for {number}")
                 self.remove_refresh_token(number)
@@ -212,8 +201,7 @@ class Auth:
     
     def get_active_user(self):
         if not self.active_user:
-            # Try to activate the first valid one, cleaning bad tokens along the way
-            for rt in list(self.refresh_tokens):  # copy because remove may mutate
+            for rt in list(self.refresh_tokens):
                 try:
                     tokens = get_new_token(self.api_key, rt["refresh_token"], rt.get("subscriber_id", ""))
                     if tokens:
@@ -230,11 +218,9 @@ class Auth:
                 self.renew_active_user_token()
             except Exception as e:
                 print(f"Renew failed: {e}")
-                # if current active is bad, clean it
                 if self.active_user:
                     num = self.active_user.get("number")
                     try:
-                        # force a get_new to see
                         get_new_token(self.api_key, self.active_user["tokens"]["refresh_token"], self.active_user.get("subscriber_id", ""))
                     except Exception:
                         if num:
@@ -249,31 +235,28 @@ class Auth:
         return active_user["tokens"] if active_user else None
     
     def write_tokens_to_file(self):
-        with open(resolve_path("refresh-tokens.json"), "w", encoding="utf-8") as f:
-            json.dump(self.refresh_tokens, f, indent=4)
+        write_user_json(USER_REFRESH_TOKENS, self.refresh_tokens)
     
     def write_active_number(self):
         if self.active_user:
-            with open(resolve_path("active.number"), "w", encoding="utf-8") as f:
-                f.write(str(self.active_user["number"]))
+            write_user_text(USER_ACTIVE_NUMBER, str(self.active_user["number"]))
         else:
-            if os.path.exists("active.number"):
-                os.remove("active.number")
+            if user_blob_exists(USER_ACTIVE_NUMBER):
+                delete_user_blob(USER_ACTIVE_NUMBER)
     
     def load_active_number(self):
-        if os.path.exists("active.number"):
-            with open(resolve_path("active.number"), "r", encoding="utf-8") as f:
-                number_str = f.read().strip()
-                if number_str.isdigit():
-                    number = int(number_str)
-                    success = self.set_active_user(number)
-                    if not success:
-                        # Bad active saved → clear it so we don't keep trying the dead one
-                        try:
-                            if os.path.exists("active.number"):
-                                os.remove("active.number")
-                        except Exception:
-                            pass
-                        self.active_user = None
+        if not user_blob_exists(USER_ACTIVE_NUMBER):
+            return
+        number_str = (read_user_text(USER_ACTIVE_NUMBER) or "").strip()
+        if number_str.isdigit():
+            number = int(number_str)
+            success = self.set_active_user(number)
+            if not success:
+                try:
+                    if user_blob_exists(USER_ACTIVE_NUMBER):
+                        delete_user_blob(USER_ACTIVE_NUMBER)
+                except Exception:
+                    pass
+                self.active_user = None
 
 AuthInstance = Auth()

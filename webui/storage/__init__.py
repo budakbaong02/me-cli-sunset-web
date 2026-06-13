@@ -33,6 +33,15 @@ from webui.storage.crypto import (
     resolve_encryption_key,
 )
 from webui.storage.file_backend import FileBackend
+from webui.storage.tenant import (
+    current_storage_username,
+    ensure_user_bootstrap,
+    get_storage_username,
+    read_user_json,
+    read_user_text,
+    write_user_json,
+    write_user_text,
+)
 
 __all__ = [
     "ENCRYPTED_BLOB_KEYS",
@@ -51,6 +60,13 @@ __all__ = [
     "USER_REFRESH_TOKENS",
     "USER_TELEGRAM",
     "clear_storage_cache",
+    "current_storage_username",
+    "ensure_user_bootstrap",
+    "get_storage_username",
+    "read_user_json",
+    "read_user_text",
+    "write_user_json",
+    "write_user_text",
     "decrypt_bytes",
     "decrypt_text",
     "encrypt_bytes",

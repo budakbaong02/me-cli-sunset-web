@@ -1,10 +1,9 @@
 # Decoy package management
 import time
-import json
 
 from app.client.engsel import get_package_details
 from app.service.auth import AuthInstance
-from webui.context import resolve_path
+from webui.storage.tenant import read_user_json
 
 class DecoyPackage:
     _instance_ = None
@@ -95,11 +94,10 @@ class DecoyPackage:
         try:
             print(f"Refreshing decoy data for: {decoy_name}")
 
-            decoy = {}
-            with open(resolve_path(path), "r", encoding="utf-8") as f:
-                decoy = json.load(f)
-
-            decoy_data = decoy
+            decoy_data = read_user_json(path, default=None)
+            if not isinstance(decoy_data, dict):
+                print(f"Decoy file missing or invalid: {path}")
+                return
             # Try with stored values first; if that fails, fall back to None/None
             # which makes get_family iterate all (is_enterprise × migration_type) combos.
             attempts = [

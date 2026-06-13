@@ -4,14 +4,14 @@ The Auth singleton reads from CWD. We have transitioned away from os.chdir()
 to ContextVars. This module now just sets the ContextVar so background threads
 like the Telegram bot or Monitoring loop can isolate their data.
 """
-import os
-import json
 import time
 import threading
 from pathlib import Path
 
-from webui.users import user_dir, PROJECT_DIR
+from webui.users import user_dir
 from webui.context import current_user_dir
+from webui.storage.backend import USER_REFRESH_TOKENS
+from webui.storage.tenant import current_storage_username, read_user_json
 
 _cache_lock = threading.Lock()
 _token_cache: dict[tuple[str, int], tuple[float, dict]] = {}
@@ -23,13 +23,15 @@ class _UserCwd:
 
     def __init__(self, username: str):
         self.username = username
-        self.token = None
+        self.dir_token = None
+        self.user_token = None
 
     def __enter__(self):
         udir = user_dir(self.username)
         udir.mkdir(parents=True, exist_ok=True)
-        self.token = current_user_dir.set(udir)
-        
+        self.dir_token = current_user_dir.set(udir)
+        self.user_token = current_storage_username.set(self.username)
+
         try:
             from app.service.auth import AuthInstance
             AuthInstance.reload_for_current_dir()
@@ -38,8 +40,10 @@ class _UserCwd:
         return self
 
     def __exit__(self, *exc):
-        if self.token:
-            current_user_dir.reset(self.token)
+        if self.user_token is not None:
+            current_storage_username.reset(self.user_token)
+        if self.dir_token is not None:
+            current_user_dir.reset(self.dir_token)
         return False
 
 
@@ -49,13 +53,9 @@ def user_cwd(username: str) -> _UserCwd:
 
 def list_user_accounts(username: str) -> list[dict]:
     """Account metadata from refresh-tokens.json — no network calls."""
-    udir = user_dir(username)
-    rt_file = udir / "refresh-tokens.json"
-    if not rt_file.exists():
-        return []
-    try:
-        entries = json.loads(rt_file.read_text(encoding="utf-8"))
-    except Exception:
+    with user_cwd(username):
+        entries = read_user_json(USER_REFRESH_TOKENS, default=[])
+    if not isinstance(entries, list):
         return []
     results = []
     for entry in entries:

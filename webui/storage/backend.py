@@ -10,6 +10,12 @@ GLOBAL_TELEGRAM_CONFIG = "telegram.json"
 GLOBAL_SESSION_SECRET = "session.secret"
 GLOBAL_USERS_REGISTRY = "users.json"
 
+GLOBAL_DATA_KEYS: frozenset[str] = frozenset({
+    GLOBAL_TELEGRAM_CONFIG,
+    GLOBAL_SESSION_SECRET,
+    GLOBAL_USERS_REGISTRY,
+})
+
 USER_REFRESH_TOKENS = "refresh-tokens.json"
 USER_ACTIVE_NUMBER = "active.number"
 USER_AX_FP = "ax.fp"

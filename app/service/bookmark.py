@@ -1,7 +1,11 @@
-import os
 import json
 from typing import List, Dict
-from webui.context import resolve_path
+from webui.storage.backend import USER_BOOKMARK
+from webui.storage.tenant import (
+    read_user_json,
+    user_blob_exists,
+    write_user_json,
+)
 
 class Bookmark:
     _instance = None
@@ -15,15 +19,15 @@ class Bookmark:
     def __init__(self):
         if not self._initialized:
             self.packages: List[Dict] = []
-            self.filepath = "bookmark.json"
+            self.filepath = USER_BOOKMARK
             self.reload_for_current_dir()
             self._initialized = True
 
     def reload_for_current_dir(self):
-        """Reset and re-read bookmark.json from current working dir."""
+        """Reset and re-read bookmark.json for the current storage tenant."""
         self.packages = []
-        self.filepath = "bookmark.json"
-        if os.path.exists(self.filepath):
+        self.filepath = USER_BOOKMARK
+        if user_blob_exists(self.filepath):
             try:
                 self.load_bookmark()
             except Exception as e:
@@ -33,15 +37,12 @@ class Bookmark:
             self._save([])
 
     def _save(self, data: List[Dict]):
-        """Helper to write JSON safely."""
-        with open(resolve_path(self.filepath), "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
+        write_user_json(self.filepath, data)
 
     def _ensure_schema(self):
-        """Ensure all bookmarks have the latest schema fields."""
         updated = False
         for p in self.packages:
-            if "family_name" not in p:  # add missing field
+            if "family_name" not in p:
                 p["family_name"] = ""
                 updated = True
             if "order" not in p:
@@ -51,25 +52,14 @@ class Bookmark:
                 p["package_option_code"] = ""
                 updated = True
         if updated:
-            self.save_bookmark()  # persist schema upgrade
+            self.save_bookmark()
 
     def load_bookmark(self):
-        """Load bookmarks from JSON file and ensure schema consistency."""
-        path = resolve_path(self.filepath)
-        import os
-        if not os.path.exists(path):
-            self.packages = []
-            return
-            
-        with open(path, "r", encoding="utf-8") as f:
-            try:
-                self.packages = json.load(f)
-            except json.JSONDecodeError:
-                self.packages = []
+        data = read_user_json(self.filepath, default=[])
+        self.packages = data if isinstance(data, list) else []
         self._ensure_schema()
 
     def save_bookmark(self):
-        """Save current bookmarks to JSON file."""
         self._save(self.packages)
 
     def add_bookmark(
@@ -82,7 +72,6 @@ class Bookmark:
         order: int,
         package_option_code: str = "",
     ) -> bool:
-        """Add a bookmark if it does not already exist."""
         code = (package_option_code or "").strip()
         key = (family_code, variant_name, order)
         code_key = (family_code, code) if code else None
@@ -122,7 +111,6 @@ class Bookmark:
         variant_name: str,
         order: int,
     ) -> bool:
-        """Remove a bookmark if it exists. Returns True if removed."""
         for i, p in enumerate(self.packages):
             if (
                 p["family_code"] == family_code
@@ -138,12 +126,10 @@ class Bookmark:
         return False
 
     def get_bookmarks(self) -> List[Dict]:
-        """Return all bookmarks."""
         return self.packages.copy()
 
 
 def resolve_bookmark_option_code(family: dict, bookmark: dict) -> str | None:
-    """Map a bookmark row to package_option_code from get_family() payload."""
     code = (bookmark.get("package_option_code") or "").strip()
     if code:
         return code

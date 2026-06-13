@@ -11,10 +11,12 @@ from webui.storage.backend import (
     GLOBAL_SESSION_SECRET,
     GLOBAL_TELEGRAM_CONFIG,
     GLOBAL_USERS_REGISTRY,
+    USER_REFRESH_TOKENS,
     StorageBackend,
     is_encrypted_key,
     normalize_blob_key,
 )
+from webui.storage.tenant import resolve_effective_root
 from webui.storage.crypto import decrypt_bytes, encrypt_bytes, resolve_encryption_key
 from webui.users import PROJECT_DIR, USERS_DIR, WEBUI_DATA
 
@@ -35,16 +37,12 @@ class FileBackend(StorageBackend):
     def _encryption_key(self) -> bytes:
         return resolve_encryption_key(session_secret=self.get_session_secret())
 
-    def _root_for(self, username: Optional[str]) -> Path:
-        if username:
-            return self._users_root / username
-        return self._data_root
-
     def _path_for(self, username: Optional[str], key: str) -> Path:
         normalized = normalize_blob_key(key)
         if normalized.startswith("shared/"):
             return _SHARED_ROOT / normalized.removeprefix("shared/")
-        return self._root_for(username) / normalized
+        root = resolve_effective_root(username, normalized)
+        return root / normalized
 
     def _read_raw(self, path: Path) -> bytes | None:
         if not path.exists() or not path.is_file():
@@ -135,18 +133,19 @@ class FileBackend(StorageBackend):
         return self._path_for(username, key).is_file()
 
     def list_blobs(self, username: Optional[str], prefix: str = "") -> list[str]:
-        root = self._root_for(username)
         normalized_prefix = normalize_blob_key(prefix)
         if normalized_prefix.startswith("shared/"):
             root = _SHARED_ROOT
             normalized_prefix = normalized_prefix.removeprefix("shared/")
+        else:
+            root = resolve_effective_root(username, normalized_prefix or USER_REFRESH_TOKENS)
         if not root.exists():
             return []
         if normalized_prefix and not normalized_prefix.endswith("/"):
             search = root / normalized_prefix
             if search.is_file():
                 rel = search.relative_to(root).as_posix()
-                if username is None and root == _SHARED_ROOT:
+                if root == _SHARED_ROOT:
                     return [f"shared/{rel}"]
                 return [rel]
         base = root / normalized_prefix if normalized_prefix else root
@@ -157,7 +156,7 @@ class FileBackend(StorageBackend):
             if not path.is_file():
                 continue
             rel = path.relative_to(root).as_posix()
-            if username is None and root == _SHARED_ROOT:
+            if root == _SHARED_ROOT:
                 results.append(f"shared/{rel}")
             else:
                 results.append(rel)

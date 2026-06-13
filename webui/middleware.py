@@ -1,32 +1,28 @@
-"""Per-request middleware: validate webui session cookie, chdir into that
-user's data directory, then reload AuthInstance/BookmarkInstance from disk
-so all downstream code sees their files.
-
-Important: chdir is process-global. For our small/personal-use scale this is
-acceptable. If we ever go fully concurrent we should switch to context-vars
-or per-request Auth instances.
-"""
-import os
-from pathlib import Path
-
+"""Per-request middleware: validate webui session cookie, bind storage tenant,
+then reload AuthInstance/BookmarkInstance from storage for that user."""
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse, Response
 from starlette.types import ASGIApp
 
 from webui.users import (
-    COOKIE_NAME, PROJECT_DIR, USERS_DIR,
-    parse_session_token, get_user, user_dir,
+    COOKIE_NAME,
+    parse_session_token,
+    get_user,
+    user_dir,
 )
 from webui.context import current_user_dir
+from webui.storage.tenant import (
+    current_storage_username,
+    ensure_user_bootstrap,
+)
 
-# Routes accessible without auth:
 PUBLIC_PATHS = (
     "/u/login",
     "/u/register",
-    "/u/logout",      # logout itself is harmless
+    "/u/logout",
     "/static/",
     "/favicon",
-    "/u/api/",        # reserved for future public AJAX
+    "/u/api/",
 )
 
 
@@ -50,25 +46,15 @@ class WebUIAuthMiddleware(BaseHTTPMiddleware):
                 return RedirectResponse(url=f"/u/login?next={path}", status_code=303)
             return Response("Unauthorized", status_code=401)
 
-        # Authenticated: Set ContextVar instead of using blocking Global CWD Lock
-        udir = user_dir(user["username"])
+        uname = user["username"]
+        udir = user_dir(uname)
         udir.mkdir(parents=True, exist_ok=True)
+        ensure_user_bootstrap(uname)
 
-        for fn, default in (
-            ("refresh-tokens.json", "[]"),
-        ):
-            p = udir / fn
-            if not p.exists():
-                p.write_text(default, encoding="utf-8")
-        (udir / "decoy_data").mkdir(exist_ok=True)
-
-        # SET CONTEXTVAR - Supported natively by async/await and thread pools
-        token_ctx = current_user_dir.set(udir)
+        dir_token = current_user_dir.set(udir)
+        user_token = current_storage_username.set(uname)
 
         try:
-            # Safe to reload Auth & Bookmark without Global Lock
-            # because they now use `resolve_path()` to dynamically point to the correct user dir
-            # based on current_user_dir context
             try:
                 from app.service.auth import AuthInstance
                 AuthInstance.reload_for_current_dir()
@@ -88,9 +74,8 @@ class WebUIAuthMiddleware(BaseHTTPMiddleware):
             request.state.webui_user = user
             request.state.webui_user_dir = str(udir)
 
-            # Execution moves to FastAPI Route without blocking other users
             response = await call_next(request)
             return response
         finally:
-            current_user_dir.reset(token_ctx)
-
+            current_storage_username.reset(user_token)
+            current_user_dir.reset(dir_token)
