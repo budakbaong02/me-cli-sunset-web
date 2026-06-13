@@ -202,6 +202,42 @@ export function createEngselClient(options: EngselClientOptions) {
     return res.data as Record<string, unknown>;
   }
 
+  async function interceptPage(idToken: string, optionCode: string, isEnterprise = false): Promise<void> {
+    await sendApiRequest(
+      "misc/api/v8/utility/intercept-page",
+      { is_enterprise: isEnterprise, lang: "en", package_option_code: optionCode },
+      idToken,
+    );
+  }
+
+  async function getPackageDetails(
+    idToken: string,
+    familyCode: string,
+    variantCode: string,
+    optionOrder: number,
+    isEnterprise?: boolean,
+    migrationType?: string,
+  ): Promise<Record<string, unknown> | null> {
+    const familyData = await getFamily(idToken, familyCode, isEnterprise, migrationType);
+    if (!familyData) return null;
+
+    const variants = (familyData.package_variants as Record<string, unknown>[]) ?? [];
+    let optionCode: string | null = null;
+    for (const variant of variants) {
+      if (variant.package_variant_code !== variantCode) continue;
+      const options = (variant.package_options as Record<string, unknown>[]) ?? [];
+      for (const option of options) {
+        if (option.order === optionOrder) {
+          optionCode = String(option.package_option_code ?? "");
+          break;
+        }
+      }
+      break;
+    }
+    if (!optionCode) return null;
+    return getPackage(idToken, optionCode);
+  }
+
   return {
     sendApiRequest,
     getProfile,
@@ -210,6 +246,8 @@ export function createEngselClient(options: EngselClientOptions) {
     getQuotaDetailsRaw,
     getFamily,
     getPackage,
+    getPackageDetails,
+    interceptPage,
     unsubscribePackage,
     getTieringInfo,
     loginInfo,

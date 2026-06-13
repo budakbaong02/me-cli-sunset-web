@@ -5,7 +5,10 @@ import { bookmark } from "./routes/bookmark";
 import { dashboard } from "./routes/dashboard";
 import { hot } from "./routes/hot";
 import { packages } from "./routes/packages";
+import { purchase } from "./routes/purchase";
 import { store } from "./routes/store";
+import { processPurchaseJob } from "./queue/purchase-consumer";
+import type { PurchaseQueueMessage } from "./queue/purchase-jobs";
 import { webuiAuth } from "./routes/webui-auth";
 import { htmlResponse, renderErrorPage } from "./ssr";
 import type { AppEnv } from "./types";
@@ -29,6 +32,7 @@ app.route("/", packages);
 app.route("/", store);
 app.route("/", hot);
 app.route("/", bookmark);
+app.route("/", purchase);
 
 app.get("/demo/error", (c) => {
   const html = renderErrorPage(c.req.raw, {
@@ -46,4 +50,12 @@ app.notFound((c) => {
   return htmlResponse(html, 404);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async queue(batch: MessageBatch<PurchaseQueueMessage>, env: import("./env").Env): Promise<void> {
+    for (const msg of batch.messages) {
+      await processPurchaseJob(env, msg.body);
+      msg.ack();
+    }
+  },
+};

@@ -20,4 +20,19 @@ export interface Env {
   DATA?: R2Bucket;
   KV?: KVNamespace;
   ASSETS?: Fetcher;
+  PURCHASE_QUEUE?: Queue<PurchaseQueueMessage>;
+}
+
+/** Queue payload — mirrors queue/purchase-jobs.ts */
+interface PurchaseQueueMessage {
+  id: string;
+  kind: "option" | "hot2";
+  username: string;
+  method: string;
+  paymentFor: string;
+  walletNumber: string;
+  qrisAmount: number;
+  optionCode?: string;
+  hot2Idx?: number;
+  createdAt: number;
 }

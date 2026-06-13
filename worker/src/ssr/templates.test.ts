@@ -24,6 +24,24 @@ describe("MyXL templates", () => {
     expect(html).toContain("/bookmark/remove");
   });
 
+  it("renders purchase result with pending job poll", () => {
+    const html = renderLayout("purchase_result", new Request("http://localhost/purchase/OPT1"), {
+      page_title: "Pembelian",
+      title: "Memproses pembelian…",
+      job_pending: true,
+      job_id: "job-123",
+      result_json: "{}",
+      result_success: false,
+      result_has_qr: false,
+      has_qris_img: false,
+      has_result_data: false,
+      has_result_details: false,
+      result_details: [],
+    });
+    expect(html).toContain("/internal/jobs/purchase/job-123");
+    expect(html).toContain("Memproses pembelian");
+  });
+
   it("renders dashboard with active user", () => {
     const html = renderLayout("dashboard", new Request("http://localhost/"), {
       page_title: "Beranda",

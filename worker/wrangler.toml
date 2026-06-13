@@ -31,5 +31,14 @@ ENVIRONMENT = "development"
 # binding = "KV"
 # id = "<kv-id>"
 
+# [[queues.producers]]
+# binding = "PURCHASE_QUEUE"
+# queue = "purchase-jobs"
+
+# [[queues.consumers]]
+# queue = "purchase-jobs"
+# max_batch_size = 1
+# max_retries = 3
+
 [dev]
 port = 8787

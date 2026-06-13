@@ -9,6 +9,8 @@ import loginTemplate from "./templates/login.html";
 import myPackagesTemplate from "./templates/my_packages.html";
 import packageDetailTemplate from "./templates/package_detail.html";
 import packagesInputCodeTemplate from "./templates/packages_input_code.html";
+import purchaseJobStatusTemplate from "./templates/purchase_job_status.html";
+import purchaseResultTemplate from "./templates/purchase_result.html";
 import storeFamiliesTemplate from "./templates/store_families.html";
 import storePackagesTemplate from "./templates/store_packages.html";
 import storeRedemablesTemplate from "./templates/store_redemables.html";
@@ -32,4 +34,6 @@ export const TEMPLATES: Record<string, string> = {
   store_families: storeFamiliesTemplate,
   store_packages: storePackagesTemplate,
   store_redemables: storeRedemablesTemplate,
+  purchase_result: purchaseResultTemplate,
+  purchase_job_status: purchaseJobStatusTemplate,
 };

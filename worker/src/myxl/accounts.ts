@@ -1,3 +1,4 @@
+import type { MyXlClientConfig } from "../clients/config";
 import type { CiamClient, TokenResponse } from "../clients/ciam";
 import type { EngselClient } from "../clients/engsel";
 import { USER_ACTIVE_NUMBER, USER_MYXL_META, USER_REFRESH_TOKENS } from "../storage/keys";
@@ -31,6 +32,7 @@ interface MyXlMeta {
 }
 
 export interface MyXlClients {
+  config: MyXlClientConfig;
   ciam: CiamClient;
   engsel: EngselClient;
 }

@@ -205,6 +205,11 @@ export async function axFingerprint(secrets: CryptoSecrets, dev: DeviceInfo): Pr
   return base64Encode(ct);
 }
 
+export function randomIvHex16(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export async function buildEncryptedField(
   secrets: CryptoSecrets,
   ivHex16: string,
