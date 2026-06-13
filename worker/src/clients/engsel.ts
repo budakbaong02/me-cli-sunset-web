@@ -88,6 +88,16 @@ export function createEngselClient(options: EngselClientOptions) {
     return res.data as Record<string, unknown>;
   }
 
+  async function getTieringInfo(idToken: string) {
+    const res = await sendApiRequest(
+      "gamification/api/v8/loyalties/tiering/info",
+      { is_enterprise: false, lang: "en" },
+      idToken,
+    );
+    if (typeof res === "string" || !res.data) return null;
+    return res.data as Record<string, unknown>;
+  }
+
   async function loginInfo(tokens: EngselTokens, isEnterprise = false) {
     const res = await sendApiRequest(
       "api/v8/auth/login",
@@ -103,6 +113,7 @@ export function createEngselClient(options: EngselClientOptions) {
     getProfile,
     getBalance,
     getQuotaDetails,
+    getTieringInfo,
     loginInfo,
   };
 }

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
-import { getTheme } from "./auth/users";
 import { sessionMiddleware } from "./middleware/session";
+import { dashboard } from "./routes/dashboard";
+import { myxlAuth } from "./routes/auth";
 import { webuiAuth } from "./routes/webui-auth";
-import { htmlResponse, renderErrorPage, renderLayout } from "./ssr";
+import { htmlResponse, renderErrorPage } from "./ssr";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -18,25 +19,8 @@ app.get("/health", (c) =>
 );
 
 app.route("/", webuiAuth);
-
-app.get("/", (c) => {
-  const user = c.get("webuiUser");
-  const html = renderLayout(
-    "error_body",
-    c.req.raw,
-    {
-      title: "WebUI-XL",
-      message: user
-        ? `Halo, ${user.username}! Phase 2 Worker — MyXL routes coming in PR-13+.`
-        : "Phase 2 Worker — SSR + session ready.",
-      message_pre: false,
-      page_title: "WebUI-XL",
-      webui_user: user ? { username: user.username } : undefined,
-      user_theme: getTheme(user),
-    },
-  );
-  return htmlResponse(html);
-});
+app.route("/", myxlAuth);
+app.route("/", dashboard);
 
 app.get("/demo/error", (c) => {
   const html = renderErrorPage(c.req.raw, {

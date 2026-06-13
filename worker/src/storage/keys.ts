@@ -11,6 +11,8 @@ export const GLOBAL_DATA_KEYS = new Set([
 ]);
 
 export const USER_REFRESH_TOKENS = "refresh-tokens.json";
+export const USER_OTP_PENDING = "otp-pending.json";
+export const USER_MYXL_META = "myxl-meta.json";
 export const USER_ACTIVE_NUMBER = "active.number";
 export const USER_AX_FP = "ax.fp";
 export const USER_BOOKMARK = "bookmark.json";
@@ -22,6 +24,8 @@ export const USER_DECOY_DIR = "decoy_data";
 
 export const ENCRYPTED_BLOB_KEYS = new Set([
   USER_REFRESH_TOKENS,
+  USER_OTP_PENDING,
+  USER_MYXL_META,
   USER_ACTIVE_NUMBER,
   USER_AX_FP,
   USER_BOOKMARK,

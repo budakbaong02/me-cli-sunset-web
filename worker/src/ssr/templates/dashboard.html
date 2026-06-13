@@ -1,0 +1,78 @@
+<div class="neu-box-lg mb-6 p-6 relative overflow-hidden">
+  <div class="relative z-10">
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="text-xs text-slate-400 uppercase tracking-wider">Nomor Aktif</div>
+        <div class="text-2xl sm:text-3xl font-bold text-slate-100 font-mono cursor-pointer" onclick="toggleMsisdn()">
+          <span id="msisdn-text">••••••••••</span>
+          <input type="hidden" id="msisdn-full" value="{{active_user.number}}">
+        </div>
+        <div class="text-xs text-slate-400 mt-1">
+          <span class="neu-badge">{{active_user.subscription_type}}</span>
+          {{#has_tier}}<span class="neu-badge">★ Tier {{tier}}</span>{{/has_tier}}
+        </div>
+      </div>
+      <a href="/accounts" class="text-xs text-slate-400 hover:text-slate-200">Ganti akun ↗</a>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 sm:gap-4 mt-6">
+      {{#dashboard_stats}}
+      <div class="text-center p-3 rounded-[14px] neu-inset-card">
+        <div class="text-[0.6rem] uppercase tracking-widest text-slate-500">{{label}}</div>
+        <div class="font-bold text-sm sm:text-base text-slate-200 mt-0.5 truncate">{{value}}</div>
+      </div>
+      {{/dashboard_stats}}
+    </div>
+
+    {{#balance_err}}<div class="mt-3 text-xs neu-box-sm text-red-400 p-2">{{balance_err}}</div>{{/balance_err}}
+  </div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <a href="/packages/my" class="card-link bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20">
+    <div class="text-xl font-bold text-emerald-300">{{active_packages_count}}</div>
+    <div class="text-xs text-slate-400">Paket Aktif</div>
+  </a>
+  <a href="/transactions" class="card-link bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20">
+    <div class="text-xl font-bold text-amber-300">Riwayat</div>
+    <div class="text-xs text-slate-400">Transaksi</div>
+  </a>
+  <a href="/bookmark" class="card-link bg-sky-500/10 border-sky-500/30 hover:bg-sky-500/20">
+    <div class="text-xl font-bold text-sky-300">Bookmark</div>
+    <div class="text-xs text-slate-400">Paket favorit</div>
+  </a>
+  <a href="/notifications" class="card-link bg-fuchsia-500/10 border-fuchsia-500/30 hover:bg-fuchsia-500/20">
+    <div class="text-xl font-bold text-fuchsia-300">Notifikasi</div>
+    <div class="text-xs text-slate-400">Pesan terbaru</div>
+  </a>
+</div>
+
+<section class="mb-6">
+  <h2 class="text-sm uppercase tracking-wider text-slate-400 mb-3">Beli Paket</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <a class="card-action" href="/hot"><div>Hot Deals</div></a>
+    <a class="card-action" href="/hot2"><div>Hot-2</div></a>
+    <a class="card-action" href="/packages/by-option"><div>By Option Code</div></a>
+    <a class="card-action" href="/packages/by-family"><div>By Family Code</div></a>
+    <a class="card-action" href="/purchase/family-loop"><div>Loop Family</div></a>
+    <a class="card-action" href="/store/packages"><div>Cari di Toko</div></a>
+  </div>
+</section>
+
+<section class="mb-6">
+  <h2 class="text-sm uppercase tracking-wider text-slate-400 mb-3">Komunitas</h2>
+  <div class="grid grid-cols-2 gap-3">
+    <a class="card-action" href="/family-plan"><div>Akrab (Family Plan)</div></a>
+    <a class="card-action" href="/circle"><div>Circle</div></a>
+  </div>
+</section>
+
+<section>
+  <h2 class="text-sm uppercase tracking-wider text-slate-400 mb-3">Lainnya</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <a class="card-action" href="/register"><div class="text-xs">Register</div></a>
+    <a class="card-action" href="/validate-msisdn"><div class="text-xs">Validate</div></a>
+    <a class="card-action" href="/register/puk"><div class="text-xs">PUK</div></a>
+    <a class="card-action" href="/accounts"><div class="text-xs">Akun</div></a>
+  </div>
+</section>
