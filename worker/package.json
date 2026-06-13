@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@noble/ciphers": "^1.2.1",
-    "hono": "^4.7.4"
+    "hono": "^4.7.4",
+    "mustache": "^4.2.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250224.0",
+    "@types/mustache": "^4.2.6",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8",
     "wrangler": "^4.14.0"

@@ -19,4 +19,5 @@ export interface Env {
   DB?: D1Database;
   DATA?: R2Bucket;
   KV?: KVNamespace;
+  ASSETS?: Fetcher;
 }

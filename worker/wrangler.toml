@@ -3,6 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[assets]
+directory = "./static"
+binding = "ASSETS"
+
 [vars]
 ENVIRONMENT = "development"
 

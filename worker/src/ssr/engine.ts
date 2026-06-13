@@ -1,0 +1,103 @@
+import Mustache from "mustache";
+import { applyFilter } from "./filters";
+import { buildBottomNav, buildNavSections } from "./nav";
+import { TEMPLATES } from "./templates";
+
+export type RenderContext = Record<string, unknown>;
+
+function getByPath(ctx: RenderContext, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, key) => {
+    if (acc != null && typeof acc === "object") return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, ctx);
+}
+
+const FILTER_RE = /\{\{\{?\s*([^#^}/|]+?)\s*\|\s*(\w+)\s*\}?\}\}/g;
+
+/** Expand `{{ value | rp }}` before Mustache render (Jinja filter compat). */
+export function preprocessFilters(template: string, ctx: RenderContext): string {
+  return template.replace(FILTER_RE, (match, varPath: string, filterName: string) => {
+    const value = getByPath(ctx, varPath.trim());
+    const result = applyFilter(filterName, value);
+    if (match.startsWith("{{{")) return result;
+    return Mustache.escape(result);
+  });
+}
+
+export function themeClass(userTheme?: string): string {
+  return userTheme === "light" ? "theme-light" : "";
+}
+
+export function buildLayoutContext(request: Request, extra: RenderContext = {}): RenderContext {
+  const path = new URL(request.url).pathname;
+  const bottom = buildBottomNav(path);
+  return {
+    path,
+    page_title: "WebUI-XL",
+    theme_class: themeClass(extra.user_theme as string | undefined),
+    sections: buildNavSections(path),
+    bottom_home: bottom.home,
+    bottom_packages: bottom.packages,
+    bottom_hot: bottom.hot,
+    bottom_transactions: bottom.transactions,
+    bottom_bookmark: bottom.bookmark,
+    ...extra,
+  };
+}
+
+export function renderTemplate(name: string, ctx: RenderContext): string {
+  const tpl = TEMPLATES[name];
+  if (!tpl) throw new Error(`unknown template: ${name}`);
+  return Mustache.render(preprocessFilters(tpl, ctx), ctx);
+}
+
+export function renderLayout(bodyTemplate: string, request: Request, ctx: RenderContext = {}): string {
+  const layoutCtx = buildLayoutContext(request, ctx);
+  const body = renderTemplate(bodyTemplate, layoutCtx);
+  const pageTitle = (ctx.page_title as string) ?? (ctx.title as string) ?? "WebUI-XL";
+  return renderTemplate("base", { ...layoutCtx, content: body, page_title: pageTitle });
+}
+
+export function htmlResponse(html: string, status = 200): Response {
+  return new Response(html, {
+    status,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+export interface WebuiLoginContext {
+  mode: "login" | "register";
+  username?: string;
+  error?: string;
+  info?: string;
+  next?: string;
+  users_count: number;
+  user_theme?: string;
+}
+
+export function renderWebuiLogin(_request: Request, ctx: WebuiLoginContext): string {
+  const isRegister = ctx.mode === "register";
+  return renderTemplate("webui_login", {
+    theme_class: themeClass(ctx.user_theme),
+    page_title: isRegister ? "Register Webui-XL" : "Login Webui-XL",
+    is_register: isRegister,
+    is_login: !isRegister,
+    username_qs: Boolean(ctx.username),
+    username: ctx.username ?? "",
+    next: ctx.next ?? "/",
+    users_count: ctx.users_count,
+    error: ctx.error,
+    info: ctx.info,
+  });
+}
+
+export function renderErrorPage(request: Request, ctx: { title?: string; message: string }): string {
+  const title = ctx.title ?? "Error";
+  const message_pre = ctx.message.includes("\n") || ctx.message.includes("Traceback");
+  return renderLayout("error_body", request, {
+    title,
+    message: ctx.message,
+    message_pre,
+    page_title: title,
+  });
+}
